@@ -398,6 +398,7 @@
     const uploadFrame = document.querySelector("#drive-upload-frame");
     let selectedFiles = [];
     let activeRequestId = "";
+    let responseTimeout;
 
     function setStatus(message, state) {
       status.textContent = message;
@@ -505,6 +506,11 @@
         form.action = UPLOAD_ENDPOINT;
         setStatus("Sending to Drive...");
         form.submit();
+        responseTimeout = window.setTimeout(() => {
+          submitButton.disabled = false;
+          activeRequestId = "";
+          setStatus("No confirmation received. Check Drive before retrying to avoid a duplicate upload.", "error");
+        }, 60000);
       } catch (error) {
         submitButton.disabled = false;
         setStatus(error.message || "Could not prepare these files. Please try again.", "error");
@@ -512,9 +518,17 @@
     });
 
     window.addEventListener("message", (event) => {
-      if (event.source !== uploadFrame.contentWindow || !event.data || event.data.type !== "drive-upload-result") return;
+      let hostname = "";
+      try {
+        hostname = new URL(event.origin).hostname;
+      } catch {
+        return;
+      }
+      const trustedOrigin = hostname === "script.google.com" || hostname.endsWith("script.googleusercontent.com");
+      if (!trustedOrigin || !event.data || event.data.type !== "drive-upload-result") return;
       if (event.data.requestId !== activeRequestId) return;
 
+      window.clearTimeout(responseTimeout);
       submitButton.disabled = false;
       setStatus(event.data.message, event.data.ok ? "success" : "error");
       if (event.data.ok) {
