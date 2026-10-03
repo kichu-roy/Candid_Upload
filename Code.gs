@@ -82,7 +82,7 @@ function response_(requestId, ok, message) {
 
   return HtmlService.createHtmlOutput(
     "<!doctype html><html><head><meta charset=\"utf-8\"></head><body>" +
-      "<script>parent.postMessage(" + result + ", '*');</script>" +
+      "<script>window.top.postMessage(" + result + ", '*');</script>" +
       "</body></html>"
   ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
